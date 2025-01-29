@@ -1,13 +1,132 @@
+// index.html
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+<head>
     <meta charset="UTF-8">
-    <meta http-equiv="Permissions-Policy" content="interest-cohort=()">
-    <title>Grievance Webform (DEV)</title>
-  </head>
-  <body>
-    <div id="bd-grievance"></div>
-    
-    <script src="grievanceIntake.js"></script>
-  </body>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Compressor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .controls {
+            grid-column: 1 / -1;
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .image-container {
+            border: 1px solid #ccc;
+            padding: 10px;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+        }
+        input[type="url"] {
+            flex-grow: 1;
+            padding: 8px;
+        }
+        button {
+            padding: 8px 16px;
+            background: #0066ff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:disabled {
+            background: #cccccc;
+        }
+        .error {
+            color: red;
+            grid-column: 1 / -1;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="controls">
+            <input type="url" id="imageUrl" placeholder="Enter image URL" />
+            <input type="range" id="quality" min="1" max="100" value="85" />
+            <span id="qualityValue">85%</span>
+            <button id="compress">Compress</button>
+        </div>
+        <div id="error" class="error"></div>
+        <div class="container">
+            <div class="image-container">
+                <h3>Original</h3>
+                <img id="original" crossorigin="anonymous" />
+            </div>
+            <div class="image-container">
+                <h3>Compressed</h3>
+                <img id="compressed" />
+            </div>
+        </div>
+    </div>
+    <script src="compressor.js"></script>
+</body>
 </html>
+
+// compressor.js
+document.addEventListener('DOMContentLoaded', () => {
+    const imageUrlInput = document.getElementById('imageUrl');
+    const qualityInput = document.getElementById('quality');
+    const qualityValue = document.getElementById('qualityValue');
+    const compressButton = document.getElementById('compress');
+    const originalImg = document.getElementById('original');
+    const compressedImg = document.getElementById('compressed');
+    const errorDiv = document.getElementById('error');
+
+    qualityInput.addEventListener('input', (e) => {
+        qualityValue.textContent = `${e.target.value}%`;
+    });
+
+    compressButton.addEventListener('click', async () => {
+        const imageUrl = imageUrlInput.value;
+        const quality = qualityInput.value;
+
+        if (!imageUrl) return;
+
+        errorDiv.textContent = '';
+        compressButton.disabled = true;
+        
+        try {
+            // Load original image
+            originalImg.src = imageUrl;
+            
+            // Wait for original image to load
+            await new Promise((resolve, reject) => {
+                originalImg.onload = resolve;
+                originalImg.onerror = () => reject(new Error('Failed to load image'));
+            });
+
+            // Create canvas for compression
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = originalImg.naturalWidth;
+            canvas.height = originalImg.naturalHeight;
+            
+            // Draw and compress
+            ctx.drawImage(originalImg, 0, 0);
+            const compressedDataUrl = canvas.toDataURL('image/jpeg', quality / 100);
+            
+            // Display compressed image
+            compressedImg.src = compressedDataUrl;
+            
+        } catch (error) {
+            errorDiv.textContent = 'Error: ' + error.message;
+        } finally {
+            compressButton.disabled = false;
+        }
+    });
+});
